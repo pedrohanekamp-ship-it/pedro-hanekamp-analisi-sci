@@ -1,0 +1,2304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ski Analyzer">
+<meta name="theme-color" content="#0d1117">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="data:application/json,{
+  %22name%22:%22Ski%20Line%20Analyzer%22,
+  %22short_name%22:%22SkiAnalyzer%22,
+  %22start_url%22:%22.%22,
+  %22display%22:%22standalone%22,
+  %22background_color%22:%22%230d1117%22,
+  %22theme_color%22:%22%230d1117%22,
+  %22icons%22:[{%22src%22:%22data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%230d1117'/%3E%3Ctext y='.9em' font-size='90'%3E⛷%3C/text%3E%3C/svg%3E%22,%22sizes%22:%22any%22,%22type%22:%22image/svg+xml%22}]
+}">
+<title>Ski Line Analyzer</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --bg2: #161b22;
+    --bg3: #21262d;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text2: #8b949e;
+    --accent: #58a6ff;
+    --active: #3fb950;
+    --danger: #f85149;
+    --warn: #d29922;
+    --card: #1c2128;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { background: var(--bg); color: var(--text); font-family: 'Courier New', monospace; font-size: 13px; }
+
+  /* ── Header ── */
+  #header {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--bg2); border-bottom: 1px solid var(--border);
+    padding: 8px 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+  #header h1 { font-size: 16px; letter-spacing: 2px; color: var(--accent); white-space: nowrap; }
+  #header .spacer { flex: 1; }
+  .hbtn {
+    background: var(--bg3); border: 1px solid var(--border); color: var(--text);
+    padding: 5px 12px; cursor: pointer; font-family: inherit; font-size: 12px;
+    border-radius: 4px; transition: background .15s;
+  }
+  .hbtn:hover { background: var(--border); }
+  .hbtn.primary { border-color: var(--accent); color: var(--accent); }
+  .hbtn.danger { border-color: var(--danger); color: var(--danger); }
+
+  /* ── Section Headers ── */
+  .section-label {
+    background: var(--bg2); border-bottom: 1px solid var(--border);
+    padding: 6px 16px; font-size: 11px; letter-spacing: 3px; color: var(--text2);
+    text-transform: uppercase;
+  }
+
+  /* ── Slot Tabs ── */
+  .slot-tab {
+    padding: 6px 16px; border: none; border-right: 1px solid var(--border);
+    background: var(--bg2); color: var(--text2); cursor: pointer;
+    font-family: inherit; font-size: 12px; white-space: nowrap;
+    display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+    transition: background .15s; border-bottom: 2px solid transparent;
+  }
+  .slot-tab:hover { background: var(--bg3); color: var(--text); }
+  .slot-tab.active { background: var(--bg); color: var(--text); border-bottom-color: var(--active); }
+  .slot-tab .tab-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .slot-tab .tab-del { color: var(--danger); margin-left: 4px; font-size: 11px; opacity: 0.6; }
+  .slot-tab .tab-del:hover { opacity: 1; }
+
+  /* ── PAGE 1: Videos ── */
+  #page-videos { display: flex; overflow: hidden; }
+
+  .slot-panel {
+    display: flex; width: 100%; height: 100%;
+  }
+
+  /* Left: big video */
+  .slot-video-area {
+    flex: 1; display: flex; flex-direction: column; background: #000; min-width: 0;
+    border-right: 1px solid var(--border);
+  }
+  .slot-video-area .video-drop {
+    flex: 1; margin: 0; border: none; border-radius: 0; min-height: 0;
+    background: #000;
+  }
+  .slot-video-area .slot-frame-bar {
+    padding: 6px 10px; background: var(--bg2); border-top: 1px solid var(--border);
+    display: flex; gap: 6px; align-items: center; flex-shrink: 0;
+  }
+
+  /* Right: controls panel */
+  .slot-ctrl-panel {
+    width: 300px; flex-shrink: 0; display: flex; flex-direction: column;
+    background: var(--card); overflow-y: auto;
+  }
+  .slot-header {
+    display: flex; align-items: center; gap: 6px; padding: 8px 10px;
+    border-bottom: 1px solid var(--border); flex-wrap: wrap; flex-shrink: 0;
+    background: var(--bg2);
+  }
+  .slot-num { color: var(--text2); font-size: 11px; min-width: 20px; }
+  .slot-name {
+    background: transparent; border: none; border-bottom: 1px dashed var(--border);
+    color: var(--text); font-family: inherit; font-size: 13px; flex: 1;
+    outline: none; padding: 1px 4px; min-width: 60px;
+  }
+  .slot-name:focus { border-bottom-color: var(--accent); }
+  .color-dot {
+    width: 18px; height: 18px; border-radius: 50%; cursor: pointer;
+    border: 2px solid var(--border); flex-shrink: 0;
+    position: relative; overflow: hidden;
+  }
+  .color-dot input[type=color] {
+    position: absolute; inset: -4px; width: 140%; height: 140%;
+    opacity: 0; cursor: pointer;
+  }
+  .slot-fps {
+    background: var(--bg3); border: 1px solid var(--border); color: var(--text);
+    font-family: inherit; font-size: 11px; width: 52px; padding: 2px 4px;
+    border-radius: 3px;
+  }
+  .slot-actions { display: flex; gap: 4px; flex-wrap: wrap; padding: 8px 10px; flex-shrink: 0; border-bottom: 1px solid var(--border); }
+
+  .sbtn {
+    background: var(--bg3); border: 1px solid var(--border); color: var(--text2);
+    padding: 3px 8px; cursor: pointer; font-family: inherit; font-size: 11px;
+    border-radius: 3px; transition: all .15s;
+  }
+  .sbtn:hover { background: var(--border); color: var(--text); }
+  .sbtn.active-btn { border-color: var(--active); color: var(--active); }
+  .sbtn.t0-btn { border-color: var(--warn); color: var(--warn); }
+  .sbtn.gate-g { border-color: #58a6ff; color: #58a6ff; }
+  .sbtn.gate-v { border-color: #bc8cff; color: #bc8cff; }
+  .sbtn.gate-l { border-color: #ffa657; color: #ffa657; }
+  .sbtn.undo-btn { border-color: var(--danger); color: var(--danger); }
+  .sbtn.remove-btn { border-color: var(--danger); color: var(--danger); float: right; }
+  .sbtn.ai-btn { border-color: #a371f7; color: #a371f7; }
+  .sbtn.ai-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .ai-progress {
+    font-size: 10px; color: #a371f7; padding: 2px 10px 4px;
+    display: none;
+  }
+  .ai-progress.active { display: block; }
+
+  .video-drop {
+    background: var(--bg3); border: 2px dashed var(--border);
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: border-color .2s; position: relative;
+    overflow: hidden; min-height: 0;
+  }
+  .video-drop:hover, .video-drop.dragover { border-color: var(--accent); }
+  .video-drop video {
+    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain;
+  }
+  .video-drop .drop-label {
+    color: var(--text2); font-size: 12px; text-align: center; padding: 10px;
+    pointer-events: none; z-index: 1;
+  }
+  .video-drop input[type=file] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; z-index: 2;
+  }
+  .video-drop .load-btn {
+    position: absolute; bottom: 6px; right: 6px; z-index: 3;
+    background: var(--bg2); border: 1px solid var(--border); color: var(--text2);
+    padding: 3px 8px; cursor: pointer; font-family: inherit; font-size: 11px;
+    border-radius: 3px;
+  }
+
+  .slot-stats {
+    padding: 8px 10px; font-size: 11px; color: var(--text2);
+    border-bottom: 1px solid var(--border); flex-shrink: 0;
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px;
+  }
+  .slot-stats span { color: var(--text); }
+
+  .gate-list {
+    flex: 1; overflow-y: auto; padding: 6px 10px;
+  }
+  .gate-list::-webkit-scrollbar { width: 4px; }
+  .gate-list::-webkit-scrollbar-track { background: var(--bg3); }
+  .gate-list::-webkit-scrollbar-thumb { background: var(--border); }
+  .gate-item {
+    display: flex; gap: 6px; padding: 2px 0; font-size: 11px;
+    border-bottom: 1px solid #1e2329;
+  }
+  .gate-item .gnum { color: var(--text2); min-width: 24px; }
+  .gate-item .gtime { color: var(--text); flex: 1; }
+  .gate-item .gtype { font-size: 10px; padding: 1px 4px; border-radius: 2px; }
+  .gate-item .gtype.G { background: #1f3a5f; color: #58a6ff; }
+  .gate-item .gtype.V { background: #2d1f5f; color: #bc8cff; }
+  .gate-item .gtype.L { background: #3d2a0f; color: #ffa657; }
+
+  /* ── PAGE 2: Graphs ── */
+  #page-graphs {
+    padding: 12px; min-height: 90vh;
+  }
+
+  .graph-controls {
+    background: var(--card); border: 1px solid var(--border); border-radius: 6px;
+    padding: 10px 14px; margin-bottom: 12px;
+    display: flex; gap: 14px; flex-wrap: wrap; align-items: center;
+  }
+  .graph-controls label { color: var(--text2); font-size: 11px; }
+  .graph-controls select, .graph-controls input[type=number] {
+    background: var(--bg3); border: 1px solid var(--border); color: var(--text);
+    font-family: inherit; font-size: 12px; padding: 3px 6px; border-radius: 3px;
+    margin-left: 4px;
+  }
+  .graph-controls .ctrl-group { display: flex; align-items: center; gap: 6px; }
+
+  .charts-grid {
+    display: flex; flex-direction: column; gap: 12px; margin-bottom: 12px;
+  }
+  .chart-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 6px;
+    padding: 12px;
+  }
+  .chart-card h3 { font-size: 12px; color: var(--text2); margin-bottom: 8px; letter-spacing: 1px; }
+  .chart-card canvas { width: 100% !important; cursor: crosshair; }
+  /* Full-width 3rd chart */
+  .chart-card.full { grid-column: 1 / -1; }
+
+  .focus-box {
+    background: var(--card); border: 1px solid var(--accent); border-radius: 6px;
+    padding: 10px 14px; margin-bottom: 12px;
+  }
+  .focus-box h3 { font-size: 12px; color: var(--accent); margin-bottom: 8px; }
+  .focus-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+  .focus-cell {
+    background: var(--bg3); border: 1px solid var(--border); border-radius: 4px;
+    padding: 6px 10px; font-size: 12px; min-width: 120px;
+  }
+  .focus-cell .fc-label { color: var(--text2); font-size: 10px; }
+  .focus-cell .fc-val { color: var(--text); font-size: 14px; font-weight: bold; }
+  .focus-cell .fc-delta { font-size: 11px; }
+  .fc-plus { color: #f85149; }
+  .fc-minus { color: #3fb950; }
+
+  .summary-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+  .summary-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 6px;
+    padding: 10px 14px; min-width: 160px; flex: 1;
+  }
+  .summary-card h4 { font-size: 11px; letter-spacing: 1px; margin-bottom: 6px; }
+  .summary-card .srow { display: flex; justify-content: space-between; font-size: 12px; padding: 2px 0; }
+  .summary-card .srow span:first-child { color: var(--text2); }
+
+  /* ── COMPARE MODAL ── */
+  #compare-modal {
+    display: none; position: fixed; inset: 0; z-index: 200;
+    background: var(--bg); flex-direction: column; overflow-y: auto;
+  }
+  #compare-modal.open { display: flex; }
+
+  .compare-header {
+    background: var(--bg2); border-bottom: 1px solid var(--border);
+    padding: 8px 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+  .compare-header h2 { font-size: 14px; color: var(--accent); letter-spacing: 2px; flex: 1; }
+
+  .compare-videos {
+    display: flex; gap: 8px; padding: 8px; flex-shrink: 0; height: 55vh;
+  }
+  .compare-slot {
+    flex: 1; background: var(--card); border: 1px solid var(--border);
+    border-radius: 6px; display: flex; flex-direction: column; overflow: hidden;
+  }
+  .compare-slot-header {
+    padding: 6px 10px; background: var(--bg2); font-size: 12px;
+    display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+  }
+  .compare-slot video { flex: 1; width: 100%; object-fit: contain; background: #000; min-height: 0; }
+
+  .compare-chart-area {
+    flex-shrink: 0; height: 180px; padding: 6px 8px; border-top: 1px solid var(--border); display: flex; flex-direction: column;
+  }
+  .compare-chart-area canvas { flex: 1; width: 100% !important; min-height: 0; }
+
+  .compare-controls {
+    background: var(--bg2); border-top: 1px solid var(--border);
+    padding: 8px 16px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  }
+
+  /* ── Scrollbars ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg2); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* ── Print ── */
+  @media print {
+    #header, #page-videos, .section-label, .graph-controls, #compare-modal { display: none !important; }
+    #page-graphs { padding: 0; }
+    .chart-card canvas { page-break-inside: avoid; width: 100% !important; }
+  }
+
+  .sync-row { display: flex; align-items: center; gap: 8px; }
+  .sync-row label { color: var(--text2); font-size: 11px; }
+  input[type=checkbox] { accent-color: var(--accent); }
+
+  /* snap-all btn */
+  .snap-btn { margin-left: auto; }
+
+  .t0-display { font-size: 11px; color: var(--warn); }
+  .legend-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 2px 8px 2px 6px; border-radius: 10px; cursor: pointer;
+    font-size: 11px; border: 1px solid transparent;
+    background: var(--bg3); color: var(--text);
+    transition: opacity .15s; user-select: none;
+  }
+  .legend-pill:hover { border-color: var(--border); }
+  .legend-pill.hidden { opacity: 0.35; text-decoration: line-through; }
+  .legend-pill-swatch { width: 20px; height: 3px; border-radius: 2px; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div id="header">
+  <h1>⛷ SKI LINE ANALYZER</h1>
+  <div class="sync-row">
+    <input type="checkbox" id="sync-step-all">
+    <label for="sync-step-all">Sync step all</label>
+  </div>
+  <button class="hbtn snap-btn" onclick="snapAllToActive()">Snap all to active</button>
+  <div class="spacer"></div>
+  <button class="hbtn" onclick="saveJSON()">💾 Save JSON</button>
+  <button class="hbtn" onclick="document.getElementById('load-json-input').click()">📂 Load JSON</button>
+  <input type="file" id="load-json-input" accept=".json" style="display:none" onchange="loadJSONFile(this)">
+  <button class="hbtn primary" onclick="openCompare()">⚔ Compare</button>
+  <button class="hbtn" onclick="printAnalysis()">🖨 Print analysis</button>
+  <button class="hbtn" style="border-color:#a371f7;color:#a371f7" onclick="openTrainingModal()">🎯 Train AI</button>
+</div>
+
+<!-- PAGE 1: VIDEOS -->
+<div class="section-label" style="display:flex;align-items:stretch;padding:0;overflow:hidden">
+  <div id="slot-tabs" style="display:flex;flex:1;overflow-x:auto"></div>
+  <button id="add-slot-btn" onclick="addSlot()" style="padding:6px 16px;background:var(--bg3);border:none;border-left:1px solid var(--border);color:var(--text2);cursor:pointer;font-family:inherit;font-size:18px;flex-shrink:0">＋</button>
+</div>
+<div id="page-videos" style="display:flex;height:calc(100vh - 88px)">
+</div>
+
+<!-- PAGE 2: GRAPHS & STATS -->
+<div class="section-label">📈 GRAPHS & STATS — PAGE 2</div>
+<div id="page-graphs">
+
+  <div class="graph-controls">
+    <div class="ctrl-group">
+      <label>Baseline:</label>
+      <select id="sel-baseline" onchange="renderAllGraphs()"></select>
+    </div>
+    <div class="ctrl-group">
+      <label>Start from:</label>
+      <select id="sel-start" onchange="renderAllGraphs()">
+        <option value="t0">t₀</option>
+      </select>
+    </div>
+    <div class="ctrl-group">
+      <label>Focus gate:</label>
+      <select id="sel-focus" onchange="renderFocus()"></select>
+    </div>
+  </div>
+
+  <div id="focus-box" class="focus-box">
+    <h3>FOCUS GATE INFO</h3>
+    <div id="focus-grid" class="focus-grid"></div>
+  </div>
+
+  <div class="charts-grid">
+    <div class="chart-card full">
+      <h3>GATE INTERVAL (N − N-1)</h3>
+      <div id="legend-gateinterval" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
+      <canvas id="chart-gateinterval" height="240"></canvas>
+    </div>
+    <div class="chart-card full">
+      <h3>INTERVAL Δ vs BASELINE</h3>
+      <div id="legend-interval" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
+      <canvas id="chart-interval" height="240"></canvas>
+    </div>
+    <div class="chart-card full">
+      <h3>CUMULATIVE Δ vs BASELINE</h3>
+      <div id="legend-cumulative" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
+      <canvas id="chart-cumulative" height="240"></canvas>
+    </div>
+  </div>
+
+  <div id="summary-grid" class="summary-grid"></div>
+</div>
+
+<!-- COMPARE MODAL -->
+<div id="compare-modal">
+  <div class="compare-header">
+    <h2>⚔ COMPARE MODE</h2>
+    <label style="font-size:11px;color:var(--text2)">A:
+      <select id="cmp-a" onchange="renderCompare()"></select>
+    </label>
+    <label style="font-size:11px;color:var(--text2)">B:
+      <select id="cmp-b" onchange="renderCompare()"></select>
+    </label>
+    <label style="font-size:11px;color:var(--text2)">Graph:
+      <select id="cmp-graph" onchange="renderCompare()">
+        <option value="gateinterval">Gate Interval</option>
+        <option value="interval">Interval Δ</option>
+        <option value="cumulative">Cumulative Δ</option>
+      </select>
+    </label>
+    <button class="hbtn danger" onclick="closeCompare()">✕ Close</button>
+  </div>
+  <div class="compare-videos">
+    <div class="compare-slot" id="cmp-slot-a">
+      <div class="compare-slot-header">
+        <span id="cmp-label-a" style="color:var(--accent)">A</span>
+      </div>
+      <video id="cmp-video-a" controls></video>
+    </div>
+    <div class="compare-slot" id="cmp-slot-b">
+      <div class="compare-slot-header">
+        <span id="cmp-label-b" style="color:var(--warn)">B</span>
+      </div>
+      <video id="cmp-video-b" controls></video>
+    </div>
+  </div>
+  <div class="compare-chart-area">
+    <div id="legend-compare" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;padding:0 4px"></div>
+    <canvas id="chart-compare" height="160"></canvas>
+  </div>
+  <div class="compare-controls">
+    <button class="hbtn primary" onclick="cmpPlay()">▶ Play both</button>
+    <button class="hbtn" onclick="cmpPause()">⏸ Pause both</button>
+    <button class="hbtn" onclick="cmpSlomo()">🐌 Slomo 0.25×</button>
+    <span style="color:var(--text2);font-size:11px;margin-left:8px">← → step both | Click graph → seek both</span>
+  </div>
+</div>
+
+<!-- TRAINING MODAL -->
+<div id="training-modal" style="display:none;position:fixed;inset:0;z-index:300;background:var(--bg);flex-direction:column;font-family:'Courier New',monospace">
+  <div style="background:var(--bg2);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;flex-shrink:0">
+    <span style="color:#a371f7;font-size:14px;letter-spacing:2px">🎯 AI TRAINING</span>
+    <span id="train-counts" style="font-size:11px;color:var(--text2)"></span>
+    <div style="flex:1"></div>
+    <button class="hbtn" style="border-color:#a371f7;color:#a371f7" onclick="document.getElementById('train-video-input').click()">📂 Load video</button>
+    <input type="file" id="train-video-input" accept="video/*" style="display:none" onchange="loadTrainingVideo(this)">
+    <button class="hbtn" style="border-color:#a371f7;color:#a371f7" onclick="document.getElementById('train-json-input').click()">📎 Load JSON</button>
+    <input type="file" id="train-json-input" accept=".json" style="display:none" onchange="loadTrainingJSON(this)">
+    <button class="hbtn danger" onclick="clearTrainingExamples()">🗑 Clear all</button>
+    <button class="hbtn danger" onclick="closeTrainingModal()">✕ Close</button>
+  </div>
+  <div style="display:flex;flex:1;min-height:0;gap:0">
+    <!-- Left: video labeler -->
+    <div style="flex:1;display:flex;flex-direction:column;border-right:1px solid var(--border);min-width:0">
+      <div style="padding:8px 12px;background:var(--bg3);border-bottom:1px solid var(--border);font-size:11px;color:var(--text2);flex-shrink:0">
+        Scrub to a gate crossing moment, then label it
+      </div>
+      <div style="flex:1;background:#000;position:relative;min-height:0">
+        <video id="train-video" style="width:100%;height:100%;object-fit:contain" controls></video>
+        <canvas id="train-overlay" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:0.5"></canvas>
+      </div>
+      <div style="padding:10px 12px;background:var(--bg2);border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;flex-shrink:0">
+        <button id="train-yes-btn" onclick="labelCurrentFrame(true)" style="flex:1;padding:10px;background:rgba(63,185,80,0.15);border:2px solid var(--active);color:var(--active);cursor:pointer;font-family:inherit;font-size:13px;border-radius:4px;font-weight:bold">✓ Mark as Gate</button>
+        <span id="train-flash" style="font-size:18px;opacity:0;transition:opacity 0.3s"></span>
+      </div>
+      <div style="padding:6px 12px;background:var(--bg3);border-top:1px solid var(--border);display:flex;gap:6px;align-items:center;flex-shrink:0">
+        <button onclick="trainStepFrame(-10)" style="padding:4px 8px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);cursor:pointer;font-family:inherit;font-size:11px;border-radius:3px">«10</button>
+        <button onclick="trainStepFrame(-1)" style="padding:4px 10px;background:var(--bg3);border:1px solid var(--accent);color:var(--accent);cursor:pointer;font-family:inherit;font-size:13px;border-radius:3px;font-weight:bold">‹</button>
+        <span id="train-timecode" style="font-size:11px;color:var(--text2);min-width:70px;text-align:center">0.000s</span>
+        <button onclick="trainStepFrame(1)" style="padding:4px 10px;background:var(--bg3);border:1px solid var(--accent);color:var(--accent);cursor:pointer;font-family:inherit;font-size:13px;border-radius:3px;font-weight:bold">›</button>
+        <button onclick="trainStepFrame(10)" style="padding:4px 8px;background:var(--bg3);border:1px solid var(--border);color:var(--text2);cursor:pointer;font-family:inherit;font-size:11px;border-radius:3px">10»</button>
+        <span style="font-size:10px;color:var(--text2);margin-left:4px">← → keys</span>
+      </div>
+    </div>
+    <!-- Right: labeled examples grid -->
+    <div style="width:340px;display:flex;flex-direction:column;flex-shrink:0">
+      <div style="padding:8px 12px;background:var(--bg3);border-bottom:1px solid var(--border);font-size:11px;color:var(--text2);flex-shrink:0">
+        Labeled examples (used in every AI scan)
+      </div>
+      <div id="train-examples-grid" style="flex:1;overflow-y:auto;padding:8px;display:flex;flex-wrap:wrap;gap:6px;align-content:flex-start"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// CHART.JS v2.7-STYLE RENDERER (custom inline implementation)
+// ═══════════════════════════════════════════════════════════
+
+const ChartV2 = (function() {
+  'use strict';
+
+  const COLORS = {
+    grid: 'rgba(48,54,61,0.8)',
+    axis: '#8b949e',
+    text: '#8b949e',
+    tooltipBg: 'rgba(22,27,34,0.95)',
+    tooltipBorder: '#30363d',
+    tooltipText: '#e6edf3',
+  };
+
+  function lerp(a,b,t){ return a+(b-a)*t; }
+
+  function parseColor(c, alpha) {
+    // c is hex or rgb string
+    if (c.startsWith('#')) {
+      const r=parseInt(c.slice(1,3),16), g=parseInt(c.slice(3,5),16), b=parseInt(c.slice(5,7),16);
+      return `rgba(${r},${g},${b},${alpha})`;
+    }
+    if (c.startsWith('rgba')) {
+      return c.replace(/[\d.]+\)$/,`${alpha})`);
+    }
+    if (c.startsWith('rgb(')) {
+      return c.replace('rgb(','rgba(').replace(')',`,${alpha})`);
+    }
+    return c;
+  }
+
+  function niceRange(min, max, ticks=6) {
+    if (min===max) { min = min-1; max = max+1; }
+    const range = max - min;
+    const rough = range / ticks;
+    const exp = Math.floor(Math.log10(rough));
+    const unit = Math.pow(10, exp);
+    const nice = [1,2,2.5,5,10].find(f => f*unit >= rough) * unit;
+    const lo = Math.floor(min/nice)*nice;
+    const hi = Math.ceil(max/nice)*nice;
+    return { min: lo, max: hi, step: nice };
+  }
+
+  function drawBezierLine(ctx, pts, tension=0.4) {
+    if (pts.length < 2) return;
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (let i=0; i<pts.length-1; i++) {
+      const p0 = pts[i-1] || pts[i];
+      const p1 = pts[i];
+      const p2 = pts[i+1];
+      const p3 = pts[i+2] || p2;
+      const cp1x = p1.x + (p2.x-p0.x)*tension/2;
+      const cp1y = p1.y + (p2.y-p0.y)*tension/2;
+      const cp2x = p2.x - (p3.x-p1.x)*tension/2;
+      const cp2y = p2.y - (p3.y-p1.y)*tension/2;
+      ctx.bezierCurveTo(cp1x,cp1y,cp2x,cp2y,p2.x,p2.y);
+    }
+  }
+
+  class Chart {
+    constructor(canvas, config) {
+      this.canvas = canvas;
+      this.ctx = canvas.getContext('2d');
+      this.config = config;
+      this._tooltip = null;
+      this._clickHandler = null;
+      this._moveHandler = null;
+      this._hidden = new Set();
+      this._instances = Chart._instances || (Chart._instances = new WeakMap());
+      Chart._instances.set(canvas, this);
+      // Zoom/pan state
+      this._zoom = { xMin: null, xMax: null }; // null = show all
+      this._dragging = false;
+      this._dragStart = null;
+      this._render();
+      this._bindEvents();
+    }
+
+    destroy() {
+      if (this._moveHandler) this.canvas.removeEventListener('mousemove', this._moveHandler);
+      if (this._clickHandler) this.canvas.removeEventListener('click', this._clickHandler);
+      if (this._wheelHandler) this.canvas.removeEventListener('wheel', this._wheelHandler);
+      if (this._mousedownHandler) this.canvas.removeEventListener('mousedown', this._mousedownHandler);
+      if (this._mouseupHandler) this.canvas.removeEventListener('mouseup', this._mouseupHandler);
+    }
+
+    update() { this._render(); }
+
+    _getLayout() {
+      const W = this.canvas.width;
+      const H = this.canvas.height;
+      const pad = { top: 36, right: 20, bottom: 44, left: 56 };
+      return {
+        W, H, pad,
+        plotX: pad.left, plotY: pad.top,
+        plotW: W - pad.left - pad.right,
+        plotH: H - pad.top - pad.bottom,
+      };
+    }
+
+    _render() {
+      const { canvas, ctx, config } = this;
+      // DPI
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = (rect.height || 300) * dpr;
+      ctx.scale(dpr, dpr);
+      this._W = rect.width;
+      this._H = rect.height || 300;
+
+      ctx.clearRect(0, 0, this._W, this._H);
+      this._drawChart();
+    }
+
+    _drawChart() {
+      const { ctx, config } = this;
+      const W = this._W, H = this._H;
+      const pad = { top: 36, right: 24, bottom: 44, left: 58 };
+      const plotX = pad.left, plotY = pad.top;
+      const plotW = W - pad.left - pad.right;
+      const plotH = H - pad.top - pad.bottom;
+
+      this._layout = { pad, plotX, plotY, plotW, plotH, W, H };
+
+      // Collect all data points for range
+      const datasets = config.data.datasets;
+      const labels = config.data.labels || [];
+      const nPts = labels.length;
+
+      // Zoom: determine visible index range
+      const zoomXMin = this._zoom.xMin ?? 0;
+      const zoomXMax = this._zoom.xMax ?? (nPts - 1);
+      const visMin = Math.max(0, Math.floor(zoomXMin));
+      const visMax = Math.min(nPts - 1, Math.ceil(zoomXMax));
+      this._visMin = visMin; this._visMax = visMax;
+
+      let allY = [];
+      datasets.forEach((ds, di) => {
+        if (this._hidden.has(di)) return;
+        if (ds.data) ds.data.forEach((v, i) => {
+          if (v != null && i >= visMin && i <= visMax) allY.push(v);
+        });
+      });
+
+      let yRange = niceRange(
+        Math.min(...allY, 0),
+        Math.max(...allY, 0)
+      );
+
+      // zero line if mixed
+      const hasPos = allY.some(v=>v>0);
+      const hasNeg = allY.some(v=>v<0);
+
+      // Store for click
+      this._yRange = yRange;
+      this._nPts = nPts;
+      this._labels = labels;
+
+      const visRange = Math.max(1, zoomXMax - zoomXMin);
+      const xScale = (i) => plotX + ((i - zoomXMin) / visRange) * plotW;
+      const yScale = (v) => plotY + plotH - ((v - yRange.min) / (yRange.max - yRange.min)) * plotH;
+
+      this._xScale = xScale;
+      this._yScale = yScale;
+      this._zoomXMin = zoomXMin;
+      this._zoomXMax = zoomXMax;
+
+      // Gridlines
+      ctx.strokeStyle = COLORS.grid;
+      ctx.lineWidth = 0.7;
+
+      // Horizontal grid + y-labels
+      const ySteps = Math.round((yRange.max - yRange.min) / yRange.step);
+      ctx.fillStyle = COLORS.text;
+      ctx.font = '10px Courier New';
+      ctx.textAlign = 'right';
+      for (let i=0; i<=ySteps; i++) {
+        const v = yRange.min + i * yRange.step;
+        const y = yScale(v);
+        ctx.beginPath();
+        ctx.moveTo(plotX, y); ctx.lineTo(plotX+plotW, y);
+        ctx.stroke();
+        ctx.fillText(v.toFixed(2), plotX-4, y+3);
+      }
+
+      // Zero line
+      if (hasPos && hasNeg) {
+        ctx.strokeStyle = 'rgba(139,148,158,0.5)';
+        ctx.lineWidth = 1.2;
+        const y0 = yScale(0);
+        ctx.beginPath(); ctx.moveTo(plotX,y0); ctx.lineTo(plotX+plotW,y0); ctx.stroke();
+        ctx.strokeStyle = COLORS.grid; ctx.lineWidth = 0.7;
+      }
+
+      // Vertical grid + x-labels
+      ctx.textAlign = 'center';
+      ctx.fillStyle = COLORS.text;
+      const xStep = Math.max(1, Math.floor((visMax - visMin + 1) / 12));
+      for (let i = visMin; i <= visMax; i += xStep) {
+        const x = xScale(i);
+        ctx.beginPath(); ctx.moveTo(x, plotY); ctx.lineTo(x, plotY+plotH); ctx.stroke();
+        ctx.fillText(labels[i] ?? i+1, x, plotY+plotH+14);
+      }
+
+      // Axes
+      ctx.strokeStyle = COLORS.axis;
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.moveTo(plotX, plotY); ctx.lineTo(plotX, plotY+plotH);
+      ctx.lineTo(plotX+plotW, plotY+plotH); ctx.stroke();
+
+      // Zoom indicator
+      const isZoomed = this._zoom.xMin !== null;
+      if (isZoomed) {
+        ctx.fillStyle = 'rgba(88,166,255,0.15)';
+        ctx.fillRect(plotX, plotY, plotW, 16);
+        ctx.fillStyle = '#58a6ff';
+        ctx.font = '9px Courier New';
+        ctx.textAlign = 'center';
+        ctx.fillText(`ZOOM: gates ${visMin+1}–${visMax+1}  (scroll to zoom, drag to pan, dbl-click to reset)`, plotX + plotW/2, plotY + 11);
+      }
+
+      // Dataset point storage for tooltip/click
+      this._dataPoints = [];
+
+      // Draw datasets
+      datasets.forEach((ds, di) => {
+        if (this._hidden.has(di)) return;
+        const data = ds.data;
+        if (!data || data.length === 0) return;
+
+        const color = ds.borderColor || '#58a6ff';
+        const isDashed = ds.borderDash && ds.borderDash.length > 0;
+
+        // Build points — only within zoom range
+        const pts = [];
+        data.forEach((v, i) => {
+          if (v == null) return;
+          if (i < visMin - 1 || i > visMax + 1) return; // allow 1 extra for bezier continuity
+          pts.push({ x: xScale(i), y: yScale(v), i, v, dsIdx: di });
+        });
+
+        if (pts.length === 0) return;
+
+        ctx.save();
+
+        // Line — no fill ever
+        ctx.beginPath();
+        ctx.setLineDash(isDashed ? ds.borderDash : []);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = ds.borderWidth || 2;
+        drawBezierLine(ctx, pts, 0.35);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Points (only solid lines)
+        if (!isDashed) {
+          pts.forEach(p => {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, ds.pointRadius ?? 4, 0, Math.PI*2);
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(13,17,23,0.8)';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+          });
+          this._dataPoints.push({ pts, ds, di });
+        }
+
+        ctx.restore();
+      });
+
+      // No canvas legend — HTML legend pills used instead
+
+      // Tooltip
+      if (this._tooltip) {
+        this._drawTooltip(this._tooltip);
+      }
+    }
+
+    _drawTooltip(info) {
+      const { ctx } = this;
+      const { x, y, items } = info;
+      const padding = 8;
+      const lineH = 16;
+      const lines = items.map(it => `${it.label}: ${it.value.toFixed(3)}s`);
+      const maxW = Math.max(...lines.map(l => ctx.measureText(l).width)) + padding*2 + 16;
+      const boxH = lines.length * lineH + padding*2 + 14;
+
+      let tx = x+12, ty = y-boxH/2;
+      if (tx+maxW > this._W) tx = x-maxW-8;
+      if (ty < 4) ty = 4;
+      if (ty+boxH > this._H) ty = this._H-boxH-4;
+
+      // no shadow
+      ctx.fillStyle = COLORS.tooltipBg;
+      ctx.strokeStyle = COLORS.tooltipBorder;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(tx, ty, maxW, boxH, 4);
+      ctx.fill(); ctx.stroke();
+
+      ctx.fillStyle = COLORS.axis;
+      ctx.font = '10px Courier New';
+      ctx.textAlign = 'left';
+      ctx.fillText(info.title, tx+padding, ty+padding+8);
+
+      lines.forEach((l,i) => {
+        ctx.fillStyle = items[i].color;
+        ctx.fillRect(tx+padding, ty+padding+16+i*lineH, 10, 3);
+        ctx.fillStyle = COLORS.tooltipText;
+        ctx.fillText(l, tx+padding+14, ty+padding+22+i*lineH);
+      });
+    }
+
+    _findNearest(ex, ey) {
+      let best = null, bestDist = 20;
+      this._dataPoints && this._dataPoints.forEach(({pts, ds}) => {
+        pts.forEach(p => {
+          const d = Math.hypot(ex-p.x, ey-p.y);
+          if (d < bestDist) { bestDist = d; best = {p, ds}; }
+        });
+      });
+      return best;
+    }
+
+    _bindEvents() {
+      const { canvas } = this;
+
+      // Mouse move — tooltip
+      this._moveHandler = (e) => {
+        if (this._dragging) {
+          const rect = canvas.getBoundingClientRect();
+          const dx = e.clientX - rect.left - this._dragStart.x;
+          const nPts = this._nPts || 1;
+          const layout = this._layout;
+          if (!layout) return;
+          const pxPerPt = layout.plotW / Math.max(1, (this._zoomXMax - this._zoomXMin));
+          const shiftPts = -dx / pxPerPt;
+          let newMin = this._dragStart.zMin + shiftPts;
+          let newMax = this._dragStart.zMax + shiftPts;
+          const span = newMax - newMin;
+          if (newMin < 0) { newMin = 0; newMax = span; }
+          if (newMax > nPts - 1) { newMax = nPts - 1; newMin = nPts - 1 - span; }
+          this._zoom = { xMin: newMin, xMax: newMax };
+          this._tooltip = null;
+          this._render();
+          return;
+        }
+        const rect = canvas.getBoundingClientRect();
+        const ex = e.clientX - rect.left;
+        const ey = e.clientY - rect.top;
+        const hit = this._findNearest(ex, ey);
+        if (hit) {
+          const { p, ds } = hit;
+          const label = this._labels[p.i] ?? `G${p.i+1}`;
+          this._tooltip = {
+            x: p.x, y: p.y,
+            title: `Gate ${label}`,
+            items: [{ label: ds.label||'', value: p.v, color: ds.borderColor||'#fff' }]
+          };
+          canvas.style.cursor = 'pointer';
+        } else {
+          this._tooltip = null;
+          canvas.style.cursor = this._zoom.xMin !== null ? 'grab' : 'crosshair';
+        }
+        this._render();
+      };
+
+      // Click — seek video
+      this._clickHandler = (e) => {
+        if (this._didDrag) { this._didDrag = false; return; }
+        const rect = canvas.getBoundingClientRect();
+        const ex = e.clientX - rect.left;
+        const ey = e.clientY - rect.top;
+        const hit = this._findNearest(ex, ey);
+        if (hit && this.config.onClick) {
+          this.config.onClick(hit.p.i, hit.p.dsIdx);
+        }
+      };
+
+      // Double click — reset zoom
+      canvas.addEventListener('dblclick', () => {
+        this._zoom = { xMin: null, xMax: null };
+        this._tooltip = null;
+        this._render();
+      });
+
+      // Mouse down — start drag
+      this._mousedownHandler = (e) => {
+        if (this._zoom.xMin === null) return; // only drag when zoomed
+        this._dragging = true;
+        this._didDrag = false;
+        const rect = canvas.getBoundingClientRect();
+        this._dragStart = {
+          x: e.clientX - rect.left,
+          zMin: this._zoom.xMin,
+          zMax: this._zoom.xMax,
+        };
+        canvas.style.cursor = 'grabbing';
+      };
+      this._mouseupHandler = () => {
+        if (this._dragging) this._didDrag = true;
+        this._dragging = false;
+        canvas.style.cursor = this._zoom.xMin !== null ? 'grab' : 'crosshair';
+      };
+
+      // Wheel — zoom in/out centered on cursor
+      this._wheelHandler = (e) => {
+        e.preventDefault();
+        const rect = canvas.getBoundingClientRect();
+        const ex = e.clientX - rect.left;
+        const layout = this._layout;
+        if (!layout) return;
+        const nPts = this._nPts || 1;
+        // Current visible range
+        const curMin = this._zoom.xMin ?? 0;
+        const curMax = this._zoom.xMax ?? (nPts - 1);
+        const curSpan = curMax - curMin;
+        // Cursor position as fraction of plot
+        const frac = Math.max(0, Math.min(1, (ex - layout.plotX) / layout.plotW));
+        const cursorPt = curMin + frac * curSpan;
+        // Zoom factor
+        const factor = e.deltaY > 0 ? 1.25 : 0.8;
+        let newSpan = curSpan * factor;
+        newSpan = Math.max(2, Math.min(nPts - 1, newSpan));
+        let newMin = cursorPt - frac * newSpan;
+        let newMax = cursorPt + (1 - frac) * newSpan;
+        if (newMin < 0) { newMax -= newMin; newMin = 0; }
+        if (newMax > nPts - 1) { newMin -= (newMax - (nPts - 1)); newMax = nPts - 1; }
+        newMin = Math.max(0, newMin);
+        // If fully zoomed out, reset to null
+        if (newSpan >= nPts - 1) {
+          this._zoom = { xMin: null, xMax: null };
+        } else {
+          this._zoom = { xMin: newMin, xMax: newMax };
+        }
+        this._tooltip = null;
+        this._render();
+      };
+
+      canvas.addEventListener('mousemove', this._moveHandler);
+      canvas.addEventListener('click', this._clickHandler);
+      canvas.addEventListener('mousedown', this._mousedownHandler);
+      canvas.addEventListener('mouseup', this._mouseupHandler);
+      canvas.addEventListener('wheel', this._wheelHandler, { passive: false });
+    }
+  }
+
+  return { Chart };
+})();
+
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+
+let slots = [];
+let activeSlotIdx = 0;
+let charts = {};
+
+const COLORS_POOL = ['#58a6ff','#3fb950','#ffa657','#ff7b72','#d2a8ff','#79c0ff','#a5d6ff','#56d364'];
+
+function makeSlot(idx) {
+  return {
+    index: idx,
+    label: `Run ${idx+1}`,
+    color: COLORS_POOL[idx % COLORS_POOL.length],
+    fps: 25,
+    t0: null,   // seconds
+    gates: [],  // [{t, type}]
+    videoURL: null,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════
+// SLOT MANAGEMENT
+// ═══════════════════════════════════════════════════════════
+
+function initSlots() {
+  slots = [makeSlot(0), makeSlot(1)];
+  renderSlots();
+}
+
+function addSlot() {
+  const s = makeSlot(slots.length);
+  slots.push(s);
+  activeSlotIdx = slots.length - 1;
+  renderSlots();
+  updateSelectors();
+  renderAllGraphs();
+}
+
+function removeSlot(idx) {
+  if (slots.length <= 1) return;
+  slots.splice(idx, 1);
+  slots.forEach((s,i) => s.index = i);
+  if (activeSlotIdx >= slots.length) activeSlotIdx = slots.length-1;
+  renderSlots();
+  updateSelectors();
+  renderAllGraphs();
+}
+
+function setActive(idx) {
+  if (idx < 0 || idx >= slots.length) return;
+  activeSlotIdx = idx;
+  renderSlots();
+  renderGateList(idx);
+  updateSlotStats(idx);
+}
+
+function renderSlots() {
+  renderSlotTabs();
+  const page = document.getElementById('page-videos');
+  page.innerHTML = '';
+  if (slots.length === 0) return;
+  const slot = slots[activeSlotIdx];
+  const panel = document.createElement('div');
+  panel.className = 'slot-panel';
+  panel.dataset.idx = activeSlotIdx;
+  panel.innerHTML = buildSlotHTML(slot, activeSlotIdx);
+  page.appendChild(panel);
+  initSlotVideo(panel, slot, activeSlotIdx);
+}
+
+function renderSlotTabs() {
+  const tabBar = document.getElementById('slot-tabs');
+  if (!tabBar) return;
+  tabBar.innerHTML = '';
+  slots.forEach((slot, idx) => {
+    const tab = document.createElement('button');
+    tab.className = 'slot-tab' + (idx === activeSlotIdx ? ' active' : '');
+    tab.innerHTML = `<span class="tab-dot" style="background:${slot.color}"></span>${slot.label || 'Run '+(idx+1)}<span class="tab-del" onclick="event.stopPropagation();removeSlot(${idx})">\u2715</span>`;
+    tab.addEventListener('click', () => setActive(idx));
+    tabBar.appendChild(tab);
+  });
+}
+
+function buildSlotHTML(slot, idx) {
+  const t0Str = slot.t0 != null ? `t₀=${slot.t0.toFixed(3)}s` : 't₀=—';
+  const fps = slot.fps || 25;
+  return `
+  <div class="slot-video-area">
+    <div class="video-drop" id="vdrop-${idx}">
+      <div class="drop-label">Drop video here<br>or click Load</div>
+      <input type="file" accept="video/*" onchange="loadVideoFile(${idx},this)">
+      <button class="load-btn" onclick="event.stopPropagation();document.querySelector('#vdrop-${idx} input[type=file]').click()">Load</button>
+    </div>
+    <div class="slot-frame-bar">
+      <button class="sbtn" onclick="stepVideo(${idx},-10/${fps})">\u00ab10</button>
+      <button class="sbtn" style="border-color:var(--accent);color:var(--accent)" onclick="stepVideo(${idx},-1/${fps})">\u2039</button>
+      <span id="timecode-${idx}" style="font-size:11px;color:var(--text2);min-width:70px;text-align:center">0.000s</span>
+      <button class="sbtn" style="border-color:var(--accent);color:var(--accent)" onclick="stepVideo(${idx},1/${fps})">\u203a</button>
+      <button class="sbtn" onclick="stepVideo(${idx},10/${fps})">10\u00bb</button>
+      <span style="font-size:10px;color:var(--text2);margin-left:4px">\u2190 \u2192 keys</span>
+    </div>
+  </div>
+  <div class="slot-ctrl-panel">
+    <div class="slot-header">
+      <span class="slot-num">${idx+1}</span>
+      <input class="slot-name" value="${slot.label}" onchange="slots[${idx}].label=this.value;renderSlotTabs();updateSelectors();renderAllGraphs()">
+      <div class="color-dot" id="cdot-${idx}" style="background:${slot.color}">
+        <input type="color" value="${slot.color}" oninput="setSlotColor(${idx},this.value)">
+      </div>
+      <input class="slot-fps" type="number" value="${fps}" title="FPS" onchange="slots[${idx}].fps=+this.value">
+      <span class="t0-display" id="t0disp-${idx}">${t0Str}</span>
+    </div>
+    <div class="slot-actions">
+      <button class="sbtn t0-btn" onclick="setT0(${idx})">Set t\u2080</button>
+      <button class="sbtn gate-g" onclick="addGate(${idx},'G')">G gate</button>
+      <button class="sbtn gate-v" onclick="addGate(${idx},'V')">V gate</button>
+      <button class="sbtn gate-l" onclick="addGate(${idx},'L')">L gate</button>
+      <button class="sbtn undo-btn" onclick="undoGate(${idx})">Undo</button>
+      <button class="sbtn" onclick="clearGates(${idx})">Clear</button>
+      <button class="sbtn ai-btn" id="ai-btn-${idx}" onclick="aiScanGates(${idx})">\U0001f916 AI Scan</button>
+    </div>
+    <div class="ai-progress" id="ai-prog-${idx}"></div>
+    <div class="slot-stats" id="stats-${idx}">
+      <div>Gates: <span id="gc-${idx}">${slot.gates.length}</span></div>
+      <div>Avg \u0394t: <span id="avdt-${idx}">\u2014</span></div>
+      <div>t\u2080: <span id="t0s-${idx}">${slot.t0 != null ? slot.t0.toFixed(3)+'s' : '\u2014'}</span></div>
+    </div>
+    <div class="gate-list" id="glist-${idx}"></div>
+  </div>
+  `;
+}
+
+function initSlotVideo(panel, slot, idx) {
+  const drop = panel.querySelector('.video-drop');
+  drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('dragover'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('dragover'));
+  drop.addEventListener('drop', e => {
+    e.preventDefault(); drop.classList.remove('dragover');
+    const f = e.dataTransfer.files[0];
+    if (f) setVideoFile(idx, f);
+  });
+  if (slot.videoURL) attachVideo(idx, slot.videoURL);
+}
+
+function loadVideoFile(idx, input) {
+  const f = input.files[0];
+  if (f) setVideoFile(idx, f);
+}
+
+function setVideoFile(idx, file) {
+  const url = URL.createObjectURL(file);
+  slots[idx].videoURL = url;
+  attachVideo(idx, url);
+}
+
+function attachVideo(idx, url) {
+  const drop = document.querySelector(`#vdrop-${idx}`);
+  if (!drop) return;
+  let vid = drop.querySelector('video');
+  if (!vid) {
+    vid = document.createElement('video');
+    vid.controls = true;
+    vid.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:1';
+    drop.appendChild(vid);
+  }
+  vid.src = url;
+  drop.querySelector('.drop-label').style.display = 'none';
+  vid.addEventListener('timeupdate', () => {
+    const tc = document.getElementById(`timecode-${idx}`);
+    if (tc) tc.textContent = vid.currentTime.toFixed(3) + 's';
+  });
+}
+
+function getVideo(idx) {
+  const drop = document.querySelector(`#vdrop-${idx}`);
+  return drop ? drop.querySelector('video') : null;
+}
+
+function setT0(idx) {
+  const vid = getVideo(idx);
+  if (!vid) return;
+  slots[idx].t0 = vid.currentTime;
+  const t0Str = `t₀=${slots[idx].t0.toFixed(3)}s`;
+  const disp = document.getElementById(`t0disp-${idx}`);
+  if (disp) disp.textContent = t0Str;
+  const t0s = document.getElementById(`t0s-${idx}`);
+  if (t0s) t0s.textContent = slots[idx].t0.toFixed(3)+'s';
+  updateSelectors();
+  renderAllGraphs();
+}
+
+function setSlotColor(idx, color) {
+  slots[idx].color = color;
+  const dot = document.getElementById(`cdot-${idx}`);
+  if (dot) dot.style.background = color;
+  renderAllGraphs();
+}
+
+function addGate(idx, type) {
+  const vid = getVideo(idx);
+  if (!vid) return;
+  slots[idx].gates.push({ t: vid.currentTime, type });
+  updateSlotStats(idx);
+  renderGateList(idx);
+  updateSelectors();
+  renderAllGraphs();
+}
+
+function undoGate(idx) {
+  slots[idx].gates.pop();
+  updateSlotStats(idx);
+  renderGateList(idx);
+  updateSelectors();
+  renderAllGraphs();
+}
+
+function clearGates(idx) {
+  slots[idx].gates = [];
+  updateSlotStats(idx);
+  renderGateList(idx);
+  updateSelectors();
+  renderAllGraphs();
+}
+
+function updateSlotStats(idx) {
+  const slot = slots[idx];
+  const gc = document.getElementById(`gc-${idx}`);
+  if (gc) gc.textContent = slot.gates.length;
+
+  // Avg Δt normal-only
+  const normals = slot.gates.filter(g=>g.type==='G');
+  let avgDt = '—';
+  if (normals.length >= 2) {
+    let sum=0, cnt=0;
+    for (let i=1; i<normals.length; i++) {
+      sum += normals[i].t - normals[i-1].t;
+      cnt++;
+    }
+    avgDt = (sum/cnt).toFixed(3)+'s';
+  }
+  const avdt = document.getElementById(`avdt-${idx}`);
+  if (avdt) avdt.textContent = avgDt;
+}
+
+function renderGateList(idx) {
+  const list = document.getElementById(`glist-${idx}`);
+  if (!list) return;
+  list.innerHTML = '';
+  slots[idx].gates.forEach((g, i) => {
+    const div = document.createElement('div');
+    div.className = 'gate-item';
+    div.innerHTML = `
+      <span class="gnum">${i+1}</span>
+      <span class="gtime">${g.t.toFixed(3)}s</span>
+      <span class="gtype ${g.type}">${g.type}</span>
+    `;
+    list.appendChild(div);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// KEYBOARD
+// ═══════════════════════════════════════════════════════════
+
+document.addEventListener('keydown', e => {
+  const tag = document.activeElement.tagName;
+  if (tag==='INPUT'||tag==='SELECT'||tag==='TEXTAREA') return;
+
+  // Slot select 1-9
+  if (e.key >= '1' && e.key <= '9') {
+    const i = parseInt(e.key)-1;
+    if (i < slots.length) setActive(i);
+    return;
+  }
+
+  const sync = document.getElementById('sync-step-all').checked;
+  const fps = slots[activeSlotIdx]?.fps || 25;
+  const fStep = 1/fps;
+
+  if (e.key==='g'||e.key==='G') { addGate(activeSlotIdx,'G'); return; }
+  if (e.key==='v'||e.key==='V') { addGate(activeSlotIdx,'V'); return; }
+  if (e.key==='l'||e.key==='L') { addGate(activeSlotIdx,'L'); return; }
+
+  if (e.key==='ArrowLeft' || e.key==='ArrowRight') {
+    e.preventDefault();
+    const delta = e.key==='ArrowLeft' ? -fStep : fStep;
+    const targets = sync ? slots.map((_,i)=>i) : [activeSlotIdx];
+    targets.forEach(i => stepVideo(i, delta));
+  }
+  if (e.key==='ArrowUp' || e.key==='ArrowDown') {
+    e.preventDefault();
+    const delta = e.key==='ArrowDown' ? -5*fStep : 5*fStep;
+    const targets = sync ? slots.map((_,i)=>i) : [activeSlotIdx];
+    targets.forEach(i => stepVideo(i, delta));
+  }
+});
+
+function stepVideo(idx, delta) {
+  const vid = getVideo(idx);
+  if (vid) vid.currentTime = Math.max(0, vid.currentTime + delta);
+}
+
+function snapAllToActive() {
+  const vid = getVideo(activeSlotIdx);
+  if (!vid) return;
+  const t = vid.currentTime;
+  slots.forEach((_,i) => {
+    if (i!==activeSlotIdx) {
+      const v = getVideo(i);
+      if (v) v.currentTime = t;
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// SELECTORS
+// ═══════════════════════════════════════════════════════════
+
+function updateSelectors() {
+  const baseline = document.getElementById('sel-baseline');
+  const start = document.getElementById('sel-start');
+  const focus = document.getElementById('sel-focus');
+  const cmpA = document.getElementById('cmp-a');
+  const cmpB = document.getElementById('cmp-b');
+
+  const cur_bl = baseline.value;
+  const cur_st = start.value;
+  const cur_fc = focus.value;
+
+  baseline.innerHTML = '';
+  slots.forEach((s,i) => {
+    const o = document.createElement('option');
+    o.value = i; o.textContent = s.label || `Run ${i+1}`;
+    baseline.appendChild(o);
+  });
+  if (cur_bl && baseline.querySelector(`option[value="${cur_bl}"]`)) baseline.value = cur_bl;
+
+  // Max gates across all slots
+  const maxGates = Math.max(...slots.map(s=>s.gates.length), 0);
+  start.innerHTML = '<option value="t0">t₀</option>';
+  for (let i=1; i<=maxGates; i++) {
+    const o = document.createElement('option');
+    o.value = i; o.textContent = `Gate ${i}`;
+    start.appendChild(o);
+  }
+  if (cur_st && start.querySelector(`option[value="${cur_st}"]`)) start.value = cur_st;
+
+  focus.innerHTML = '';
+  for (let i=1; i<=maxGates; i++) {
+    const o = document.createElement('option');
+    o.value = i; o.textContent = `Gate ${i}`;
+    focus.appendChild(o);
+  }
+  if (cur_fc && focus.querySelector(`option[value="${cur_fc}"]`)) focus.value = cur_fc;
+
+  cmpA.innerHTML = ''; cmpB.innerHTML = '';
+  slots.forEach((s,i) => {
+    [cmpA,cmpB].forEach(sel => {
+      const o = document.createElement('option');
+      o.value = i; o.textContent = s.label||`Run ${i+1}`;
+      sel.appendChild(o);
+    });
+  });
+  if (slots.length>=2) cmpB.value = 1;
+}
+
+// ═══════════════════════════════════════════════════════════
+// CALCULATIONS
+// ═══════════════════════════════════════════════════════════
+
+function getStartOffset(slot) {
+  const st = document.getElementById('sel-start').value;
+  if (st === 't0') {
+    // Use explicit t0 if set, otherwise fall back to first gate time
+    if (slot.t0 != null) return slot.t0;
+    return slot.gates.length > 0 ? slot.gates[0].t : 0;
+  }
+  const gIdx = parseInt(st) - 1;
+  if (gIdx >= 0 && gIdx < slot.gates.length) return slot.gates[gIdx].t;
+  if (slot.t0 != null) return slot.t0;
+  return slot.gates.length > 0 ? slot.gates[0].t : 0;
+}
+
+function getTimeline(slot) {
+  const off = getStartOffset(slot);
+  return slot.gates.map(g => ({ t: g.t - off, type: g.type }));
+}
+
+function getIntervals(slot) {
+  const gates = slot.gates;
+  const result = [];
+  for (let i=1; i<gates.length; i++) {
+    const interval = gates[i].t - gates[i-1].t;
+    const isNormal = (gates[i].type==='G' && gates[i-1].type==='G');
+    result.push({ interval, isNormal, type: gates[i].type });
+  }
+  return result;
+}
+
+function calcAvgLoss(slot, baseline) {
+  // avg loss = average of (interval_slot - interval_baseline) for normal-only
+  const si = getIntervals(slot);
+  const bi = getIntervals(baseline);
+  const n = Math.min(si.length, bi.length);
+  let sum=0, cnt=0;
+  for (let i=0; i<n; i++) {
+    if (si[i].isNormal && bi[i].isNormal) {
+      sum += si[i].interval - bi[i].interval;
+      cnt++;
+    }
+  }
+  return cnt>0 ? sum/cnt : null;
+}
+
+function calcIntervalDelta(slot, baseline) {
+  const si = getIntervals(slot);
+  const bi = getIntervals(baseline);
+  const n = Math.min(si.length, bi.length);
+  const result = [];
+  for (let i=0; i<n; i++) {
+    if (si[i].isNormal && bi[i].isNormal) {
+      result.push({ gateIdx: i+2, delta: si[i].interval - bi[i].interval });
+    } else {
+      result.push(null);
+    }
+  }
+  return result;
+}
+
+function calcCumulative(slot, baseline) {
+  const offS = getStartOffset(slot);
+  const offB = getStartOffset(baseline);
+  const n = Math.min(slot.gates.length, baseline.gates.length);
+  const result = [];
+  for (let i=0; i<n; i++) {
+    const ts = slot.gates[i].t - offS;
+    const tb = baseline.gates[i].t - offB;
+    result.push(ts - tb);
+  }
+  return result;
+}
+
+// ═══════════════════════════════════════════════════════════
+// GRAPHS
+// ═══════════════════════════════════════════════════════════
+
+function destroyChart(id) {
+  if (charts[id]) {
+    charts[id].destroy();
+    delete charts[id];
+  }
+}
+
+function makeDataset(slot, idx, data, extra) {
+  return {
+    label: slot.label || `Run ${idx+1}`,
+    borderColor: slot.color,
+    backgroundColor: hexToRgba(slot.color, 0.12),
+    borderWidth: 2,
+    pointRadius: 4,
+    data,
+    _slotIdx: idx,
+    ...extra
+  };
+}
+
+function hexToRgba(hex, alpha) {
+  if (!hex.startsWith('#')) return hex;
+  const r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function seekSlot(slotIdx, gateIdx) {
+  const slot = slots[slotIdx];
+  if (!slot) return;
+  const gate = slot.gates[gateIdx];
+  if (!gate) return;
+  const vid = getVideo(slotIdx);
+  if (vid) vid.currentTime = gate.t;
+  setActive(slotIdx);
+}
+
+function renderAllGraphs() {
+  renderGateInterval();
+  renderIntervalDelta();
+  renderCumulative();
+  renderFocus();
+  renderSummary();
+}
+
+function buildLegend(legendId, chartId, datasets) {
+  const container = document.getElementById(legendId);
+  if (!container) return;
+  container.innerHTML = '';
+  datasets.forEach((ds, di) => {
+    const pill = document.createElement('span');
+    pill.className = 'legend-pill';
+    const isDash = ds.borderDash && ds.borderDash.length > 0;
+    const swatchStyle = isDash
+      ? `background:repeating-linear-gradient(90deg,${ds.borderColor} 0,${ds.borderColor} 5px,transparent 5px,transparent 9px);height:2px;`
+      : `background:${ds.borderColor};`;
+    pill.innerHTML = `<span class="legend-pill-swatch" style="${swatchStyle}"></span>${ds.label || ''}`;
+    if (charts[chartId] && charts[chartId]._hidden.has(di)) pill.classList.add('hidden');
+    pill.addEventListener('click', () => {
+      const chart = charts[chartId];
+      if (!chart) return;
+      if (chart._hidden.has(di)) { chart._hidden.delete(di); pill.classList.remove('hidden'); }
+      else { chart._hidden.add(di); pill.classList.add('hidden'); }
+      chart._tooltip = null;
+      chart._render();
+    });
+    container.appendChild(pill);
+  });
+}
+
+function renderGateInterval() {
+  destroyChart('gateinterval');
+  const canvas = document.getElementById('chart-gateinterval');
+  const maxGates = Math.max(...slots.map(s => s.gates.length), 0);
+  if (maxGates < 2) return;
+
+  const labels = Array.from({length: maxGates - 1}, (_, i) => i + 2);
+  const datasets = slots.map((slot, idx) => {
+    const data = [];
+    for (let i = 1; i < maxGates; i++) {
+      const g0 = slot.gates[i - 1];
+      const g1 = slot.gates[i];
+      data.push((g0 && g1) ? (g1.t - g0.t) : null);
+    }
+    return makeDataset(slot, idx, data, {});
+  });
+
+  charts['gateinterval'] = new ChartV2.Chart(canvas, {
+    data: { labels, datasets },
+    onClick: (ptIdx, slotIdx) => seekSlot(slotIdx, ptIdx + 1)
+  });
+  buildLegend('legend-gateinterval', 'gateinterval', datasets);
+}
+
+function renderIntervalDelta() {
+  destroyChart('interval');
+  const canvas = document.getElementById('chart-interval');
+  const baseIdx = parseInt(document.getElementById('sel-baseline').value) || 0;
+  const baseline = slots[baseIdx];
+  if (!baseline || baseline.gates.length < 2) return;
+
+  const maxGates = Math.max(...slots.map(s=>s.gates.length), 0);
+  if (maxGates < 2) return;
+
+  const labels = Array.from({length: maxGates-1}, (_,i)=>i+2);
+  const datasets = [];
+
+  slots.forEach((slot, idx) => {
+    if (idx === baseIdx) return;
+    const deltas = calcIntervalDelta(slot, baseline);
+    const data = Array.from({length: maxGates-1}, (_,i) => deltas[i] ? deltas[i].delta : null);
+    datasets.push(makeDataset(slot, idx, data, {}));
+
+    // Avg loss dashed line
+    const avgLoss = calcAvgLoss(slot, baseline);
+    if (avgLoss != null) {
+      datasets.push({
+        label: `${slot.label} AVG-LOSS`,
+        borderColor: slot.color,
+        backgroundColor: 'transparent',
+        borderWidth: 1.5,
+        borderDash: [6,4],
+        data: Array(maxGates-1).fill(avgLoss),
+        fill: false,
+        pointRadius: 0,
+        _slotIdx: idx,
+      });
+    }
+  });
+
+  charts['interval'] = new ChartV2.Chart(canvas, { data: { labels, datasets }, onClick: (gateIdx, slotIdx) => seekSlot(slotIdx, gateIdx+1) });
+  buildLegend('legend-interval', 'interval', datasets);
+}
+
+function renderCumulative() {
+  destroyChart('cumulative');
+  const canvas = document.getElementById('chart-cumulative');
+  const baseIdx = parseInt(document.getElementById('sel-baseline').value) || 0;
+  const baseline = slots[baseIdx];
+  if (!baseline || baseline.gates.length === 0) return;
+
+  const maxGates = Math.max(...slots.map(s=>s.gates.length), 0);
+  if (maxGates === 0) return;
+
+  const labels = Array.from({length: maxGates}, (_,i)=>i+1);
+  const datasets = [];
+
+  slots.forEach((slot, idx) => {
+    if (idx === baseIdx) return;
+    const cum = calcCumulative(slot, baseline);
+    const data = Array.from({length: maxGates}, (_,i) => cum[i] ?? null);
+    datasets.push(makeDataset(slot, idx, data, {}));
+
+    // Straight dashed line: avgLoss * gateIndex — projected cumulative drift
+    const avgLoss = calcAvgLoss(slot, baseline);
+    if (avgLoss != null) {
+      const lineData = Array.from({length: maxGates}, (_, i) => avgLoss * (i + 1));
+      datasets.push({
+        label: `${slot.label} AVG×N`,
+        borderColor: slot.color,
+        backgroundColor: 'transparent',
+        borderWidth: 1.5,
+        borderDash: [6, 4],
+        data: lineData,
+        fill: false,
+        pointRadius: 0,
+        _slotIdx: idx,
+      });
+    }
+  });
+
+  charts['cumulative'] = new ChartV2.Chart(canvas, {
+    data: { labels, datasets },
+    onClick: (gateIdx, slotIdx) => seekSlot(slotIdx, gateIdx)
+  });
+  buildLegend('legend-cumulative', 'cumulative', datasets);
+}
+
+function renderFocus() {
+  const focusGate = parseInt(document.getElementById('sel-focus')?.value) || 1;
+  const gateIdx = focusGate - 1;
+  const baseIdx = parseInt(document.getElementById('sel-baseline').value) || 0;
+  const baseline = slots[baseIdx];
+  const grid = document.getElementById('focus-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  slots.forEach((slot, idx) => {
+    const cell = document.createElement('div');
+    cell.className = 'focus-cell';
+    const gate = slot.gates[gateIdx];
+    const off = getStartOffset(slot);
+    const t = gate ? (gate.t - off).toFixed(3)+'s' : '—';
+
+    let deltaStr = '';
+    if (gate && baseline && baseline.gates[gateIdx]) {
+      const offB = getStartOffset(baseline);
+      const tb = baseline.gates[gateIdx].t - offB;
+      const delta = (gate.t - off) - tb;
+      const cls = delta>0?'fc-plus':'fc-minus';
+      deltaStr = `<div class="fc-delta ${cls}">${delta>0?'+':''}${delta.toFixed(3)}s vs baseline</div>`;
+    }
+
+    cell.innerHTML = `
+      <div class="fc-label" style="color:${slot.color}">${slot.label}</div>
+      <div class="fc-val">${t}</div>
+      ${deltaStr}
+    `;
+    grid.appendChild(cell);
+  });
+}
+
+function renderSummary() {
+  const baseIdx = parseInt(document.getElementById('sel-baseline').value) || 0;
+  const baseline = slots[baseIdx];
+  const grid = document.getElementById('summary-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+
+  slots.forEach((slot, idx) => {
+    const card = document.createElement('div');
+    card.className = 'summary-card';
+
+    const normals = slot.gates.filter(g=>g.type==='G');
+    let avgDt = '—';
+    if (normals.length >= 2) {
+      let sum=0;
+      for (let i=1; i<normals.length; i++) sum += normals[i].t - normals[i-1].t;
+      avgDt = (sum/(normals.length-1)).toFixed(3)+'s';
+    }
+
+    let avgLossStr = '—';
+    let finalCumStr = '—';
+    if (baseline && idx !== baseIdx) {
+      const al = calcAvgLoss(slot, baseline);
+      if (al != null) avgLossStr = (al >= 0 ? '+' : '') + al.toFixed(3)+'s';
+      const cum = calcCumulative(slot, baseline);
+      if (cum.length > 0) {
+        const fc = cum[cum.length-1];
+        finalCumStr = (fc>=0?'+':'')+fc.toFixed(3)+'s';
+      }
+    }
+
+    card.innerHTML = `
+      <h4 style="color:${slot.color}">${slot.label}</h4>
+      <div class="srow"><span>Gates</span><span>${slot.gates.length}</span></div>
+      <div class="srow"><span>Avg Δt</span><span>${avgDt}</span></div>
+      <div class="srow"><span>Avg loss</span><span>${avgLossStr}</span></div>
+      <div class="srow"><span>Final cum Δ</span><span>${finalCumStr}</span></div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// JSON SAVE/LOAD
+// ═══════════════════════════════════════════════════════════
+
+function saveJSON() {
+  const data = {
+    slots: slots.map(s => ({
+      index: s.index,
+      label: s.label,
+      color: s.color,
+      fps: s.fps,
+      t0: s.t0,
+      gates: s.gates.map(g => ({ t: g.t, type: g.type }))
+    }))
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'ski-analysis.json';
+  a.click();
+}
+
+function loadJSONFile(input) {
+  const f = input.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      let data = JSON.parse(e.target.result);
+      if (Array.isArray(data)) data = { slots: data };
+      const slotsData = data.slots || data;
+      slots = slotsData.map((s, i) => {
+        const slot = makeSlot(i);
+        slot.index = s.index ?? i;
+        slot.label = s.label || `Run ${i+1}`;
+        slot.color = s.color || COLORS_POOL[i % COLORS_POOL.length];
+        slot.fps = s.fps || 25;
+        slot.t0 = s.t0 ?? null;
+        slot.gates = (s.gates || []).map(g => {
+          if (typeof g === 'number') return { t: g, type: 'G' };
+          if (typeof g === 'string') return { t: parseFloat(g.replace(/,/g,'')), type: 'G' };
+          return { t: typeof g.t === 'string' ? parseFloat(g.t.replace(/,/g,'')) : g.t, type: g.type || 'G' };
+        });
+        return slot;
+      });
+      activeSlotIdx = 0;
+      renderSlots();
+      // Only the active slot is in DOM — update it
+      updateSlotStats(activeSlotIdx);
+      renderGateList(activeSlotIdx);
+      updateSelectors();
+      renderAllGraphs();
+    } catch(err) {
+      alert('Failed to load JSON: ' + err.message);
+    }
+  };
+  reader.readAsText(f);
+  input.value = '';
+}
+
+// ═══════════════════════════════════════════════════════════
+// COMPARE MODE
+// ═══════════════════════════════════════════════════════════
+
+let cmpChart = null;
+
+function openCompare() {
+  document.getElementById('compare-modal').classList.add('open');
+  updateSelectors();
+  renderCompare();
+}
+
+function closeCompare() {
+  document.getElementById('compare-modal').classList.remove('open');
+  cmpPause();
+}
+
+function renderCompare() {
+  const ai = parseInt(document.getElementById('cmp-a').value) || 0;
+  const bi = parseInt(document.getElementById('cmp-b').value) || (slots.length > 1 ? 1 : 0);
+  const graphType = document.getElementById('cmp-graph').value;
+
+  // Update labels
+  document.getElementById('cmp-label-a').textContent = slots[ai]?.label || 'A';
+  document.getElementById('cmp-label-b').textContent = slots[bi]?.label || 'B';
+  document.getElementById('cmp-label-a').style.color = slots[ai]?.color || '#58a6ff';
+  document.getElementById('cmp-label-b').style.color = slots[bi]?.color || '#ffa657';
+
+  // Sync videos
+  const vidA = document.getElementById('cmp-video-a');
+  const vidB = document.getElementById('cmp-video-b');
+  const slotA = slots[ai], slotB = slots[bi];
+  if (slotA?.videoURL) vidA.src = slotA.videoURL; else vidA.removeAttribute('src');
+  if (slotB?.videoURL) vidB.src = slotB.videoURL; else vidB.removeAttribute('src');
+
+  // Render graph
+  renderCompareGraph(ai, bi, graphType);
+}
+
+function renderCompareGraph(ai, bi, type) {
+  if (cmpChart) { cmpChart.destroy(); cmpChart = null; }
+  const canvas = document.getElementById('chart-compare');
+  const slotA = slots[ai], slotB = slots[bi];
+  if (!slotA || !slotB) return;
+
+  const maxGates = Math.max(slotA.gates.length, slotB.gates.length, 0);
+  if (maxGates === 0) return;
+
+  let labels, datasets;
+
+  if (type === 'gateinterval') {
+    labels = Array.from({length: maxGates - 1}, (_, i) => i + 2);
+    datasets = [slotA, slotB].map((slot, si) => {
+      const data = Array.from({length: maxGates - 1}, (_, i) => {
+        const g0 = slot.gates[i], g1 = slot.gates[i + 1];
+        return (g0 && g1) ? (g1.t - g0.t) : null;
+      });
+      return makeDataset(slot, si === 0 ? ai : bi, data, {});
+    });
+  } else if (type === 'interval') {
+    labels = Array.from({length: maxGates - 1}, (_, i) => i + 2);
+    const deltas = calcIntervalDelta(slotB, slotA);
+    const data = Array.from({length: maxGates - 1}, (_, i) => deltas[i] ? deltas[i].delta : null);
+    datasets = [makeDataset(slotB, bi, data, {})];
+  } else {
+    labels = Array.from({length: maxGates}, (_, i) => i + 1);
+    const cum = calcCumulative(slotB, slotA);
+    const data = Array.from({length: maxGates}, (_, i) => cum[i] ?? null);
+    datasets = [makeDataset(slotB, bi, data, {})];
+  }
+
+  const clickFn = (ptIdx, slotIdx) => {
+    const gateIdx = type === 'gateinterval' ? ptIdx + 1 : ptIdx;
+    const slotA2 = slots[ai], slotB2 = slots[bi];
+    if (slotA2?.gates[gateIdx]) document.getElementById('cmp-video-a').currentTime = slotA2.gates[gateIdx].t;
+    if (slotB2?.gates[gateIdx]) document.getElementById('cmp-video-b').currentTime = slotB2.gates[gateIdx].t;
+  };
+
+  cmpChart = new ChartV2.Chart(canvas, { data: { labels, datasets }, onClick: clickFn });
+  buildLegend('legend-compare', 'cmp', datasets);
+  // wire legend to cmpChart manually since buildLegend uses charts[chartId]
+  const legendEl = document.getElementById('legend-compare');
+  legendEl.querySelectorAll('.legend-pill').forEach((pill, di) => {
+    pill.replaceWith(pill.cloneNode(true)); // remove old listeners
+  });
+  legendEl.querySelectorAll('.legend-pill').forEach((pill, di) => {
+    pill.addEventListener('click', () => {
+      if (!cmpChart) return;
+      if (cmpChart._hidden.has(di)) { cmpChart._hidden.delete(di); pill.classList.remove('hidden'); }
+      else { cmpChart._hidden.add(di); pill.classList.add('hidden'); }
+      cmpChart._tooltip = null;
+      cmpChart._render();
+    });
+  });
+}
+
+function cmpPlay() {
+  const va = document.getElementById('cmp-video-a');
+  const vb = document.getElementById('cmp-video-b');
+  va.playbackRate = 1; vb.playbackRate = 1;
+  va.play(); vb.play();
+}
+function cmpPause() {
+  document.getElementById('cmp-video-a').pause();
+  document.getElementById('cmp-video-b').pause();
+}
+function cmpSlomo() {
+  const va = document.getElementById('cmp-video-a');
+  const vb = document.getElementById('cmp-video-b');
+  va.playbackRate = 0.25; vb.playbackRate = 0.25;
+  va.play(); vb.play();
+}
+
+// Compare keyboard
+document.getElementById('compare-modal').addEventListener('keydown', e => {
+  const va = document.getElementById('cmp-video-a');
+  const vb = document.getElementById('cmp-video-b');
+  const fps = 25;
+  const fStep = 1/fps;
+  if (e.key==='ArrowLeft') { e.preventDefault(); va.currentTime-=fStep; vb.currentTime-=fStep; }
+  if (e.key==='ArrowRight') { e.preventDefault(); va.currentTime+=fStep; vb.currentTime+=fStep; }
+});
+
+// ═══════════════════════════════════════════════════════════
+// PRINT
+// ═══════════════════════════════════════════════════════════
+
+function printAnalysis() {
+  window.print();
+}
+
+// ═══════════════════════════════════════════════════════════
+// RESIZE handler
+// ═══════════════════════════════════════════════════════════
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => renderAllGraphs(), 200);
+});
+
+// ═══════════════════════════════════════════════════════════
+// AI GATE DETECTION
+// ═══════════════════════════════════════════════════════════
+
+// ── Global training examples ──────────────────────────────────
+// Each entry: { b64: string, isGate: bool, thumb: string }
+let globalTrainingExamples = [];
+
+function updateTrainCounts() {
+  const el = document.getElementById('train-counts');
+  if (el) el.textContent = `✓ ${globalTrainingExamples.length} gate examples`;
+  renderTrainingGrid();
+}
+
+function renderTrainingGrid() {
+  const grid = document.getElementById('train-examples-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  globalTrainingExamples.forEach((ex, i) => {
+    const card = document.createElement('div');
+    card.style.cssText = `position:relative;width:96px;flex-shrink:0;border:2px solid var(--active);border-radius:4px;overflow:hidden;cursor:pointer`;
+    card.title = 'Click to remove';
+    card.innerHTML = `
+      <img src="${ex.thumb}" style="width:100%;display:block">
+      <div style="position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:12px;background:rgba(0,0,0,0.6);padding:1px 0;color:var(--active)">✓ gate</div>
+    `;
+    card.addEventListener('click', () => {
+      globalTrainingExamples.splice(i, 1);
+      updateTrainCounts();
+    });
+    grid.appendChild(card);
+  });
+}
+
+function openTrainingModal() {
+  document.getElementById('training-modal').style.display = 'flex';
+  updateTrainCounts();
+}
+
+function closeTrainingModal() {
+  document.getElementById('training-modal').style.display = 'none';
+}
+
+function clearTrainingExamples() {
+  if (globalTrainingExamples.length === 0) return;
+  if (!confirm('Clear all training examples?')) return;
+  globalTrainingExamples = [];
+  updateTrainCounts();
+}
+
+function loadTrainingVideo(input) {
+  const f = input.files[0];
+  if (!f) return;
+  const vid = document.getElementById('train-video');
+  vid.src = URL.createObjectURL(f);
+  vid.addEventListener('timeupdate', updateTrainTimecode);
+  vid.addEventListener('seeked', updateTrainTimecode);
+  input.value = '';
+}
+
+function updateTrainTimecode() {
+  const vid = document.getElementById('train-video');
+  const el = document.getElementById('train-timecode');
+  if (vid && el) el.textContent = vid.currentTime.toFixed(3) + 's';
+}
+
+function trainStepFrame(frames) {
+  const vid = document.getElementById('train-video');
+  if (!vid || !vid.src) return;
+  // Pause first so seek is precise
+  vid.pause();
+  const fps = 25; // assume 25fps — good enough for frame stepping
+  const step = frames / fps;
+  vid.currentTime = Math.max(0, Math.min(vid.duration || 0, vid.currentTime + step));
+}
+
+// Keyboard: arrow keys step frames when training modal is open
+document.addEventListener('keydown', e => {
+  const modal = document.getElementById('training-modal');
+  if (!modal || modal.style.display === 'none') return;
+  if (e.target.tagName === 'INPUT') return;
+  if (e.key === 'ArrowLeft')  { e.preventDefault(); trainStepFrame(e.shiftKey ? -10 : -1); }
+  if (e.key === 'ArrowRight') { e.preventDefault(); trainStepFrame(e.shiftKey ? 10 : 1); }
+  if (e.key === 'g' || e.key === 'G') labelCurrentFrame(true);
+});
+
+
+
+async function loadTrainingJSON(input) {
+  const file = input.files[0];
+  if (!file) return;
+  input.value = '';
+
+  let allGateTimes = [];
+  try {
+    const raw = await file.text();
+    const data = JSON.parse(raw);
+    const slotsArr = data.slots || (Array.isArray(data) ? data : [data]);
+    slotsArr.forEach(s => {
+      (s.gates || []).forEach(g => {
+        const t = typeof g === 'number' ? g : (typeof g.t === 'number' ? g.t : parseFloat(g.t));
+        if (!isNaN(t)) allGateTimes.push(t);
+      });
+    });
+  } catch(e) { alert('Could not parse JSON'); return; }
+
+  if (allGateTimes.length === 0) { alert('No gate times found in JSON'); return; }
+
+  const vid = document.getElementById('train-video');
+  if (!vid.src) { alert('Load a video first in the training panel, then load the JSON'); return; }
+
+  const counts = document.getElementById('train-counts');
+  counts.textContent = `📸 Extracting ${allGateTimes.length} frames…`;
+
+  const cvs = document.createElement('canvas');
+  cvs.width = 320; cvs.height = 180;
+  const ctx = cvs.getContext('2d');
+
+  // Pick up to 12 evenly spread gate times
+  const step = Math.max(1, Math.floor(allGateTimes.length / 12));
+  const selected = allGateTimes.filter((_, i) => i % step === 0).slice(0, 12);
+
+  for (const t of selected) {
+    await new Promise(resolve => {
+      vid.addEventListener('seeked', () => {
+        ctx.drawImage(vid, 0, 0, cvs.width, cvs.height);
+        const b64 = cvs.toDataURL('image/jpeg', 0.72).split(',')[1];
+        const thumb = cvs.toDataURL('image/jpeg', 0.45);
+        globalTrainingExamples.push({ b64, thumb });
+        resolve();
+      }, { once: true });
+      vid.currentTime = t;
+    });
+  }
+
+  updateTrainCounts();
+}
+
+function labelCurrentFrame(isGate) {
+  if (!isGate) return; // only gate frames
+  const vid = document.getElementById('train-video');
+  if (!vid || !vid.src) { alert('Load a video first'); return; }
+
+  const cvs = document.createElement('canvas');
+  cvs.width = 320; cvs.height = 180;
+  cvs.getContext('2d').drawImage(vid, 0, 0, 320, 180);
+  const b64 = cvs.toDataURL('image/jpeg', 0.72).split(',')[1];
+  const thumb = cvs.toDataURL('image/jpeg', 0.45);
+
+  globalTrainingExamples.push({ b64, thumb });
+  updateTrainCounts();
+
+  const flash = document.getElementById('train-flash');
+  flash.textContent = '✓';
+  flash.style.color = 'var(--active)';
+  flash.style.opacity = '1';
+  setTimeout(() => { flash.style.opacity = '0'; }, 600);
+}
+
+// ── AI Review Modal (injected once) ──────────────────────────
+function ensureAIModal() {
+  if (document.getElementById('ai-review-modal')) return;
+  const m = document.createElement('div');
+  m.id = 'ai-review-modal';
+  m.style.cssText = `
+    display:none; position:fixed; inset:0; z-index:300;
+    background:rgba(13,17,23,0.96); flex-direction:column;
+    font-family:'Courier New',monospace;
+  `;
+  m.innerHTML = `
+    <div style="background:var(--bg2);border-bottom:1px solid var(--border);padding:10px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0">
+      <span style="color:#a371f7;font-size:14px;letter-spacing:2px">🤖 AI GATE REVIEW</span>
+      <span id="ai-rev-count" style="color:var(--text2);font-size:11px"></span>
+      <div style="flex:1"></div>
+      <button id="ai-rev-accept-all" style="background:var(--bg3);border:1px solid var(--active);color:var(--active);padding:5px 14px;cursor:pointer;font-family:inherit;font-size:12px;border-radius:4px">✓ Accept all</button>
+      <button id="ai-rev-close" style="background:var(--bg3);border:1px solid var(--danger);color:var(--danger);padding:5px 14px;cursor:pointer;font-family:inherit;font-size:12px;border-radius:4px">✕ Discard all</button>
+    </div>
+    <div style="padding:8px 12px;background:var(--bg3);border-bottom:1px solid var(--border);font-size:11px;color:var(--text2);flex-shrink:0">
+      Click a thumbnail to seek video · ✓ Accept · ✕ Reject each candidate
+    </div>
+    <div id="ai-rev-grid" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-wrap:wrap;gap:10px;align-content:flex-start"></div>
+    <div style="background:var(--bg2);border-top:1px solid var(--border);padding:8px 16px;display:flex;gap:8px;align-items:center;flex-shrink:0">
+      <button id="ai-rev-confirm" style="background:var(--bg3);border:1px solid #a371f7;color:#a371f7;padding:6px 20px;cursor:pointer;font-family:inherit;font-size:13px;border-radius:4px;font-weight:bold">Add accepted gates →</button>
+      <span id="ai-rev-summary" style="color:var(--text2);font-size:11px"></span>
+    </div>
+  `;
+  document.body.appendChild(m);
+}
+
+function openAIReview(slotIdx, candidates) {
+  ensureAIModal();
+  const modal = document.getElementById('ai-review-modal');
+  const grid  = document.getElementById('ai-rev-grid');
+  const count = document.getElementById('ai-rev-count');
+  const summary = document.getElementById('ai-rev-summary');
+
+  // State: accepted[i] = true/false
+  const accepted = candidates.map(() => true);
+
+  function updateSummary() {
+    const n = accepted.filter(Boolean).length;
+    summary.textContent = `${n} of ${candidates.length} accepted`;
+    document.getElementById('ai-rev-count').textContent = `${candidates.length} candidates found`;
+  }
+
+  function buildGrid() {
+    grid.innerHTML = '';
+    candidates.forEach((c, i) => {
+      const card = document.createElement('div');
+      card.style.cssText = `
+        width:160px; background:var(--card); border:2px solid ${accepted[i] ? 'var(--active)' : 'var(--danger)'};
+        border-radius:6px; overflow:hidden; cursor:pointer; transition:border-color .15s; flex-shrink:0;
+      `;
+      card.innerHTML = `
+        <img src="${c.thumb}" style="width:100%;display:block">
+        <div style="padding:5px 8px;display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:11px;color:var(--text)">${c.t.toFixed(3)}s</span>
+          <span style="font-size:12px">${accepted[i] ? '<span style="color:var(--active)">✓</span>' : '<span style="color:var(--danger)">✕</span>'}</span>
+        </div>
+        <div style="display:flex;border-top:1px solid var(--border)">
+          <button data-action="accept" data-i="${i}" style="flex:1;padding:4px;background:${accepted[i]?'rgba(63,185,80,0.15)':'var(--bg3)'};border:none;color:var(--active);cursor:pointer;font-size:11px;font-family:inherit">✓</button>
+          <button data-action="reject" data-i="${i}" style="flex:1;padding:4px;background:${!accepted[i]?'rgba(248,81,73,0.15)':'var(--bg3)'};border:none;color:var(--danger);cursor:pointer;font-size:11px;font-family:inherit">✕</button>
+        </div>
+      `;
+      // Click thumbnail → seek video
+      card.querySelector('img').addEventListener('click', () => {
+        const vid = getVideo(slotIdx);
+        if (vid) vid.currentTime = c.t;
+      });
+      // Accept/reject buttons
+      card.querySelectorAll('button[data-action]').forEach(btn => {
+        btn.addEventListener('click', e => {
+          const idx2 = parseInt(e.currentTarget.dataset.i);
+          accepted[idx2] = e.currentTarget.dataset.action === 'accept';
+          buildGrid();
+          updateSummary();
+        });
+      });
+      grid.appendChild(card);
+    });
+    updateSummary();
+  }
+
+  buildGrid();
+
+  document.getElementById('ai-rev-accept-all').onclick = () => {
+    accepted.fill(true); buildGrid(); updateSummary();
+  };
+  document.getElementById('ai-rev-close').onclick = () => {
+    modal.style.display = 'none';
+  };
+  document.getElementById('ai-rev-confirm').onclick = () => {
+    const toAdd = candidates.filter((_, i) => accepted[i]);
+    toAdd.forEach(c => slots[slotIdx].gates.push({ t: c.t, type: 'G' }));
+    slots[slotIdx].gates.sort((a, b) => a.t - b.t);
+    updateSlotStats(slotIdx);
+    renderGateList(slotIdx);
+    updateSelectors();
+    renderAllGraphs();
+    modal.style.display = 'none';
+    const prog = document.getElementById(`ai-prog-${slotIdx}`);
+    if (prog) { prog.textContent = `✅ Added ${toAdd.length} gates.`; prog.classList.add('active'); setTimeout(() => prog.classList.remove('active'), 4000); }
+  };
+
+  modal.style.display = 'flex';
+}
+
+async function aiScanGates(idx) {
+  const vid = getVideo(idx);
+  if (!vid || !vid.src) { alert('Load a video first.'); return; }
+
+  const btn  = document.getElementById(`ai-btn-${idx}`);
+  const prog = document.getElementById(`ai-prog-${idx}`);
+  btn.disabled = true;
+  prog.classList.add('active');
+
+  // Extract training frames now if pending from a JSON loaded before video
+  if (window._pendingGlobalTrainingTimes && globalTrainingExamples.length === 0) {
+    prog.textContent = '📸 Extracting training frames…';
+    // No longer used — training is done via the Training modal
+    delete window._pendingGlobalTrainingTimes;
+  }
+
+  const posExamples = globalTrainingExamples.map(e => e.b64);
+  const hasExamples = posExamples.length > 0;
+
+  const duration = isFinite(vid.duration) ? vid.duration : 0;
+  if (duration === 0) { prog.textContent = '⚠ Video duration unknown.'; btn.disabled = false; return; }
+
+  const times = [];
+  for (let t = 0; t < duration; t += 0.5) times.push(parseFloat(t.toFixed(3)));
+
+  const cvs = document.createElement('canvas');
+  cvs.width = 320; cvs.height = 180;
+  const ctx2 = cvs.getContext('2d');
+
+  function captureFrame(t) {
+    return new Promise(resolve => {
+      vid.addEventListener('seeked', () => {
+        ctx2.drawImage(vid, 0, 0, cvs.width, cvs.height);
+        resolve({ b64: cvs.toDataURL('image/jpeg', 0.72).split(',')[1], thumb: cvs.toDataURL('image/jpeg', 0.45) });
+      }, { once: true });
+      vid.currentTime = t;
+    });
+  }
+
+  async function checkFrame(b64) {
+    try {
+      const content = [];
+      if (hasExamples) {
+        content.push({ type: 'text', text: 'Here are confirmed gate crossing frames from this ski course. Study the pole positions and skier location:' });
+        posExamples.forEach((ex, i) => {
+          content.push({ type: 'text', text: `Gate example ${i + 1}:` });
+          content.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: ex } });
+        });
+        content.push({ type: 'text', text: 'Now classify this new frame:' });
+      }
+      content.push({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } });
+      content.push({ type: 'text', text: hasExamples
+        ? 'Is this a gate crossing moment like the GATE CROSSING examples? Reply only: YES or NO.'
+        : 'Ski racing video frame. Are bright blue or red vertical gate poles visible AND is the skier currently passing through them? Reply only: YES or NO.'
+      });
+      const r = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 10, messages: [{ role: 'user', content }] })
+      });
+      const d = await r.json();
+      return (d.content?.[0]?.text || '').trim().toUpperCase().startsWith('YES');
+    } catch { return false; }
+  }
+
+  const detected = [];
+  for (let i = 0; i < times.length; i++) {
+    prog.textContent = `🤖 Scanning ${i + 1} / ${times.length}${hasExamples ? ' (with training)' : ''}…`;
+    const { b64, thumb } = await captureFrame(times[i]);
+    const yes = await checkFrame(b64);
+    if (yes) detected.push({ t: times[i], thumb });
+  }
+
+  vid.currentTime = 0;
+
+  const deduped = [];
+  let lastT = -999;
+  detected.forEach(c => {
+    if (c.t - lastT > 1.5) { deduped.push(c); lastT = c.t; }
+  });
+
+  btn.disabled = false;
+  prog.classList.remove('active');
+
+  if (deduped.length === 0) {
+    prog.textContent = hasExamples ? '🤖 No gates detected even with training. Add more examples via 🎯 Train AI.' : '🤖 No gates detected. Use 🎯 Train AI in the header to add examples first.';
+    prog.classList.add('active');
+    setTimeout(() => prog.classList.remove('active'), 5000);
+    return;
+  }
+
+  openAIReview(idx, deduped);
+}
+
+
+
+initSlots();
+updateSelectors();
+
+// Initial render pass after DOM settles
+setTimeout(() => renderAllGraphs(), 100);
+
+// ── Touch pinch-zoom for graph canvases ──────────────────────
+(function() {
+  let touches = {};
+  let lastDist = null;
+  let lastMidI = null;
+
+  function getChart(canvas) {
+    return ChartV2.Chart._instances && ChartV2.Chart._instances.get(canvas);
+  }
+
+  function onTouchStart(e) {
+    Array.from(e.changedTouches).forEach(t => { touches[t.identifier] = { x: t.clientX, y: t.clientY }; });
+    const ids = Object.keys(touches);
+    if (ids.length === 2) {
+      const a = touches[ids[0]], b = touches[ids[1]];
+      lastDist = Math.hypot(b.x - a.x, b.y - a.y);
+      lastMidI = null;
+    }
+  }
+
+  function onTouchMove(e) {
+    e.preventDefault();
+    Array.from(e.changedTouches).forEach(t => { touches[t.identifier] = { x: t.clientX, y: t.clientY }; });
+    const ids = Object.keys(touches);
+    if (ids.length !== 2) return;
+    const a = touches[ids[0]], b = touches[ids[1]];
+    const dist = Math.hypot(b.x - a.x, b.y - a.y);
+    const midX = (a.x + b.x) / 2;
+    if (lastDist === null) { lastDist = dist; return; }
+
+    const canvas = e.target.closest('canvas');
+    if (!canvas) return;
+    const chart = getChart(canvas);
+    if (!chart) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const ex = midX - rect.left;
+    const layout = chart._layout;
+    if (!layout) return;
+
+    const nPts = chart._nPts || 1;
+    const curMin = chart._zoom.xMin ?? 0;
+    const curMax = chart._zoom.xMax ?? (nPts - 1);
+    const curSpan = curMax - curMin;
+    const frac = Math.max(0, Math.min(1, (ex - layout.plotX) / layout.plotW));
+    const cursorPt = curMin + frac * curSpan;
+    const factor = lastDist / dist;
+    let newSpan = curSpan * factor;
+    newSpan = Math.max(2, Math.min(nPts - 1, newSpan));
+    let newMin = cursorPt - frac * newSpan;
+    let newMax = cursorPt + (1 - frac) * newSpan;
+    if (newMin < 0) { newMax -= newMin; newMin = 0; }
+    if (newMax > nPts - 1) { newMin -= (newMax - (nPts - 1)); newMax = nPts - 1; }
+    chart._zoom = newSpan >= nPts - 1 ? { xMin: null, xMax: null } : { xMin: Math.max(0, newMin), xMax: newMax };
+    chart._tooltip = null;
+    chart._render();
+    lastDist = dist;
+  }
+
+  function onTouchEnd(e) {
+    Array.from(e.changedTouches).forEach(t => { delete touches[t.identifier]; });
+    lastDist = null;
+  }
+
+  document.querySelectorAll('canvas').forEach(c => {
+    c.addEventListener('touchstart', onTouchStart, { passive: false });
+    c.addEventListener('touchmove', onTouchMove, { passive: false });
+    c.addEventListener('touchend', onTouchEnd);
+  });
+  // Also attach to dynamically created canvases via renderAllGraphs
+  const orig = window.renderAllGraphs;
+  window.renderAllGraphs = function() {
+    orig && orig();
+    setTimeout(() => {
+      document.querySelectorAll('canvas').forEach(c => {
+        if (!c._touchBound) {
+          c._touchBound = true;
+          c.addEventListener('touchstart', onTouchStart, { passive: false });
+          c.addEventListener('touchmove', onTouchMove, { passive: false });
+          c.addEventListener('touchend', onTouchEnd);
+        }
+      });
+    }, 200);
+  };
+})();
+
+</script>
+</body>
+</html>
+"
